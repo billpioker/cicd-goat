@@ -1,0 +1,54 @@
+name: Tenable Cloud Security IaC Scan
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+  push:
+    branches:
+      - main
+    # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  iac_scan:
+    # Use the runner that best suits your needs, ubuntu-latest is a common choice.
+    runs-on: ubuntu-latest
+    name: IaC Security Scan
+
+    steps:
+      - name: ⬇️ Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🛡️ Run Tenable Cloud Security IaC Scan
+        # Use the latest version of the action
+        uses: tenable/cloud-security-actions/iac-scan@v1
+        with:
+          # Your Tenable Cloud Security API Token (required)
+          apiToken: ${{ secrets.TENABLE_CS_API_TOKEN }}
+          
+          # The URL of the Tenable Cloud Security API (required)
+          # Example: 'https://us.app.ermetic.com/' or your specific region URL
+          apiUrl: ${{ secrets.TENABLE_CS_API_URL }}
+          
+          # The path to the Infrastructure-as-Code files to scan (optional, defaults to entire repo)
+          path: './' # Change this if your IaC files are in a subdirectory (e.g., 'terraform/')
+
+          # Minimum severity level to fail the workflow (optional)
+          # Possible values: information, low, medium, high, critical
+          failOnMinSeverity: 'high'
+
+          # Output file formats (optional)
+          # Possible values: cyclonedx, json, junit, md. Use 'junit' for GitHub Actions Summary.
+          outputFileFormats: 'junit'
+          
+          # The export path for the report output file(s) (optional)
+          outputPath: 'tenable-iac-results'
+          
+      - name: 📦 Upload Scan Results Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tenable-iac-scan-report
+          path: tenable-iac-results/
+          retention-days: 50
